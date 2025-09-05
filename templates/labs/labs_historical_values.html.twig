@@ -1,0 +1,11 @@
+{% for result in results %}
+    <td class='historicalvalues {% if is_edit %}d-none d-md-table-cell{% endif %}'>
+        {% if attribute(result, vitalsValue) != 0 %}
+            {% if precision is defined %}
+                {{ attribute(result, vitalsValue)|number_format(precision)|text }}
+            {% else %}
+                {{ attribute(result, vitalsValue)|text }}
+            {% endif %}
+        {% endif %}
+    </td>
+{% endfor %}

@@ -1,0 +1,29 @@
+{% if field.hide %}
+<tr class="hide">
+    {%else %}
+<tr>
+{% endif %}
+    <td class="graph" id="{{ field.input|attr }}"><span class="labs-title">{{ field.title|text }}</span> {% if field.codes is not empty %}<small>({{ field.codes|text }})</small>{% endif %}</td>
+    <td>{{ field.unitLabel|text }}</td>
+    <td class="normal-range">{{ field.normalRange|text }}</td>
+
+    {% if is_edit %}
+    <td class='currentvalues p-2'>
+        {% if field.precision is defined %}
+        <input type="text" class="form-control skip-template-editor" size='8' name='{{ field.input|attr }}' id='{{ field.input|attr }}_input'
+               value="{% if attribute(labs,field.vitalsValue) is numeric and attribute(labs,field.vitalsValue) != 0 %}{{ attribute(labs,field.vitalsValue)|number_format(field.precision)|attr }}{% endif %}"/>
+        {% else %}
+        <input type="text" class="form-control skip-template-editor" size='8' name='{{ field.input|attr }}' id='{{ field.input|attr }}_input'
+               value="{% if attribute(labs,field.vitalsValue) is numeric and attribute(labs,field.vitalsValue) != 0 %}{{ attribute(labs, field.vitalsValue)|attr }}{% endif %}"/>
+        {% endif %}
+
+    </td>
+    <td class="editonly actions">
+        {% include 'labs_actions.html.twig' with { input: field.input } %}
+    </td>
+    {% endif %}
+    {% include 'labs_historical_values.html.twig' with { vitalsValue:field.vitalsValue, results:results, precision:field.precision, is_edit:is_edit } %}
+</tr>
+{% if is_edit %}
+{% include 'labs_reason_row.html.twig' with { input:field.input, title:field.title, labDetails:labs.get_details_for_column(field.input), is_edit:is_edit } %}
+{% endif %}

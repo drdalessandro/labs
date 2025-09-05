@@ -1,0 +1,141 @@
+{#*
+* labs.html.twig
+*
+* @package   OpenEMR
+* @link      http://www.open-emr.org
+* @author    Dr Alejandro Sergio D'Alessandro <adalessandro@epa-bienestar.com>
+* @copyright Copyright (c) 2025 Your Name <your.email@example.com>
+* @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+*#}
+<html>
+<head>
+    <title>{{ "Laboratory Results"|xlt }}</title>
+    {{ setupHeader(["datetime-picker","reason-code-widget"]) }}
+<script src="{{ FORM_ACTION|attr }}/interface/forms/labs/labs.js?v={{ assetVersion|attr_url }}" type="text/javascript"></script>
+<script>
+    let labsTranslations = {
+        'glucose_input': window.xl("Glucose")
+        ,'cholesterol_input': window.xl("Cholesterol")
+        ,'triglycerides_input': window.xl("Triglycerides")
+        ,'uric_acid_input': window.xl("Uric Acid")
+        ,'cholinesterase_input': window.xl("Cholinesterase")
+        ,'urinary_phenol_input': window.xl("Urinary Phenol")
+        ,'validateFailed': window.xl("Please correct the value(s) before proceeding!")
+        ,'invalidField': window.xl("The following field has an invalid value")
+    };
+    if (window.labsForm) {
+        window.labsForm.init({{ FORM_ACTION|js_url }}, labsTranslations);
+    } else {
+        console.error("Failed to find labsForm object to initialize javascript labs form");
+    }
+</script>
+<link rel="stylesheet" href="{{ FORM_ACTION|attr }}/interface/forms/labs/labs.css?v={{ assetVersion|attr_url }}" />
+</head>
+<body>
+
+ <div class="container mt-3">
+    <div class="row no-gutters">
+        <div class="col-4">
+            <h2 class="h2-responsive">
+                {{ "Laboratory Results"|xlt }}&nbsp;&nbsp;&nbsp;
+                <a id="labs-screen-top" href="../summary/demographics.php" class="text-decoration-none" onclick="window.top.restoreSession()"
+                    title="{{ 'Back to patient dashboard'|xla }}">
+                        <i id="advanced-tooltip" class="readonly fas fa-arrow-circle-left fa-2x small" aria-hidden="true"></i>
+                </a>
+            </h2>
+        </div>
+        {% if hasMoreLabs %}
+        <div class="col-8 text-right">
+                <h6 class="h6-responsive"><a href="#patient-labs-history" class="text-decoration-none">{{ "See More Lab Records History"|xlt }}</a></h6>
+        </div>
+        {% endif %}
+        <div class="col-sm-12">
+            <form id="labsForm" name="labs" method="post" action="{{ FORM_ACTION|attr }}/interface/forms/labs/save.php">
+                <input type="hidden" name="csrf_token_form" value="{{ CSRF_TOKEN_FORM|attr }}" />
+                {% if has_id %}
+                <div class="row">
+                    <div class="col-md-auto p-3 font-weight-bold text-right">
+                        <label for="date">{{ "Date"|xlt }}</label>
+                    </div>
+                    <div class="col-md-auto p-2">
+                        <input title="{{ 'Date and time of this lab report'|xla }}" type='text' size='14' class='form-control datetimepicker oe-patient-background' name='date' id='date' value='{{ labs.get_date|dateToTime|date("Y-m-d H:i")|attr }}' />
+                    </div>
+                </div>
+                {% endif %}
+                <div id="chart" class="chart-dygraphs" style="margin-left: -15px"></div>
+                    <div class="table-responsive">
+
+                        <table class="table">
+
+                            <thead class="table-head">
+                                <tr>
+                                    <th class="text-left"><span class="labs-title">{{ "Test"|xlt }}</span></th>
+                                    <th class="text-left">{{ "Unit"|xlt }}</th>
+                                    <th class="text-left">{{ "Normal Range"|xlt }}</th>
+                                    <th class="editonly">{{ "Value"|xlt }}</th>
+                                    <th class="editonly">{{ "Actions"|xlt }}</th>
+                                    {% for result in labsHistoryLookback %}
+                                        <th class='historicalvalues d-none d-md-table-cell'>{{ result.get_date()|dateToTime|date("Y-m-d H:i")|text }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                             {% for field in labFields %}
+                                 {% if field.type == "textbox" %}
+                                     {% include "labs_textbox.html.twig" with {field: field, labs:labs, results: labsHistoryLookback, is_edit: true }
+                                     %}
+                                 {% endif %}
+                                 {% if field.type == 'template' %}
+                                    {% include field.templateName with {labs: labs, field: field, results: labsHistoryLookback, is_edit: true} %}
+                                 {% endif %}
+                             {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+                <div class="form-group">
+                    <div class="text-left position-override">
+                        <div class="btn-group" role="group">
+                            <button type="submit" class="btn btn-primary btn-save editonly" name="Submit" value=''>{{ "Save"|xlt }}</button>
+                            <button type="button" class="btn btn-secondary btn-cancel editonly" id="cancel" value=''>{{ "Cancel"|xlt }}</button>
+                        </div>
+                    </div>
+                </div>
+            <br /><br />
+            <input type="hidden" name="id" id='id' value="{{ labs.get_id()|attr }}" />
+            <input type="hidden" name="uuid" id='uuid' value="{{ labs.get_uuid_string()|attr }}" />
+            <input type="hidden" name="activity" id='activity' value="{{ labs.get_activity()|attr }}" />
+            <input type="hidden" name="pid" id='pid' value="{{ labs.get_pid()|attr }}" />
+            <input type="hidden" name="process" id='process' value="true" />
+            </form>
+        </div>
+        {% include "labs_historical_values_complete.html.twig" with {labs:labs, results:results} %}
+    </div>
+    </div>
+<script>
+let formdate = {{ labs.get_date()|dateToTime|date("Ymd")|js_escape}};
+// labs array elements are in the format:
+//   date-glucose-cholesterol-triglycerides
+let labs = [];
+// get values from the current form elements
+labs[0] = formdate + '-' + {{ labs.get_glucose()|js_escape }} + '-' + {{ labs.get_cholesterol()|js_escape }}
+    + '-' + {{ labs.get_triglycerides()|js_escape }};
+// historic values
+{% for result in results %}
+labs[labs.length] = {{ result.get_date()|dateToTime|date("Ymd")|js_escape }} + '-' + {{ result.get_glucose()|js_escape }}
+    + '-' + {{ result.get_cholesterol()|js_escape }} + '-' + {{ result.get_triglycerides()|js_escape }};
+{% endfor %}
+let patientAge= {{ patient_age|js_escape }};
+let patient_dob= {{ patient_dob|js_escape }};
+let webroot = {{ FORM_ACTION|js_escape }};
+let pid = {{ labs.get_pid()|js_escape }};
+let cancellink = {{ DONT_SAVE_LINK|js_escape }};
+
+$(function () {
+    $("#cancel").on("click", function() { location.href=cancellink; });
+    {{ jqueryDateTimePicker('.datetimepicker', true, false, false) }}
+});
+</script>
+</body>
+</html>

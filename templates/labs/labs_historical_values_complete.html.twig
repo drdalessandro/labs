@@ -1,0 +1,52 @@
+<div class="card labs-complete-history col-12">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-4">
+                <h2 class="h2-responsive">
+                    {{ "Laboratory Results History"|xlt }}
+                    <a id="labs-screen-top" href="../summary/demographics.php" class="text-decoration-none" onclick="window.top.restoreSession()"
+                       title="{{ 'Back to patient dashboard'|xla }}">
+                        <i id="advanced-tooltip" class="readonly fas fa-arrow-circle-left fa-2x small" aria-hidden="true"></i>
+                    </a>
+                </h2>
+            </div>
+            <div class="col-8 text-right">
+                <h6 class="h6-responsive"><a id="patient-labs-history" href="#labs-screen-top" class="text-decoration-none">{{ "Back to top"|xlt }}</a></h6>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if results|length > 0 %}
+        <div class="table-responsive">
+            <table class="table">
+
+                <thead class="table-head">
+                <tr>
+                    <th class="text-left">{{ "Test"|xlt }}</th>
+                    <th class="text-left">{{ "Unit"|xlt }}</th>
+                    <th class="text-left">{{ "Normal Range"|xlt }}</th>
+                    {% for result in results %}
+                        <th class='historicalvalues d-none d-md-table-cell'>{{ result.get_date()|dateToTime|date("Y-m-d H:i")|text }}</th>
+                    {% endfor %}
+                </tr>
+                </thead>
+
+                <tbody>
+                {% for field in labFields %}
+                    {% if field.type == "textbox" %}
+                        {% include "labs_textbox.html.twig" with {field: field, labs:labs, results: results, is_edit: false }
+                        %}
+                    {% endif %}
+                    {% if field.type == 'template' %}
+                        {% include field.templateName with {labs: labs, field: field, results: results, is_edit: false } %}
+                    {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+        {% else %}
+        <p class="alert alert-info">{{ "Patient has no other lab history to display"|xlt }}</p>
+        {% endif %}
+    </div>
+</div>
